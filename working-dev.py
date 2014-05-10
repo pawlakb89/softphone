@@ -96,19 +96,33 @@ try:
     lib.set_snd_dev(0,0)
     # when no sound card found
     #lib.set_null_snd_dev()  # here is the problem i cant capture mic, speaker from local system
-
+    print "Menu: r=register, d=register default"
+    input = sys.stdin.readline().rstrip("\r\n")
+    if input==r:
+        print "Plz provide domain"
+        domain = sys.stdin.readline().rstrip("\r\n")
+        print " Plz provide user"
+        user_id = sys.stdin.redline().rstrip("\r\n")
+        print "Plz provide password"
+        user_password = sys.stdin.redline().rstrip("\r\n")
+        print  "Plz provide port"
+        user_port = sys.stdin.redline().rstrip("\r\n")
+    elif input ==d:
+        
+        user_id = "1001"
+        user_password = "1234"
+        user_domain = "192.168.43.75"
+        user_port = "5060"
+    
+    
     # Create local account
     #acc = lib.create_account_for_transport(transport, cb=MyAccountCallback())
     ###### TUTAJ TRZEBA DOROBIC POBIERANIE TEGO OD USERA I ZAPISYWANIE W PONIZSZYCH ZMIENNYCH, LUB ZAPISYWANIE DO PLIKU I JEZELI NIE ISTNIEJE TO COS #########
-    user_id = "504"
-    user_password = "gdasg649a"
-    user_domain = "10.2.0.4"
-    user_port = "5060"
     user_proxy = user_domain + ":" + user_port
     #acc = lib.create_account(pj.AccountConfig("10.2.0.4", "504", "gdasg649a"))
-    #acc = lib.create_account(pj.AccountConfig(user_domain, user_id, user_password)
-    
-    acc = lib.create_account(pj.AccountConfig("192.168.43.75", "1003", "1234"))
+    acc = lib.create_account(pj.AccountConfig(domain=user_domain, username=user_id, password=user_password)
+   # user_proxy = user_domain + ":" + user_port
+    #acc = lib.create_account(pj.AccountConfig("192.168.43.75", "1003", "1234"))
     cb = MyAccountCallback(acc)
     acc.set_callback(cb)
     #cb.wait()
@@ -129,7 +143,7 @@ try:
     # Menu loop
     while True:
         print "My SIP URI is", my_sip_uri
-        print "Menu:  m=make call, d=send dtmf, h=hangup call, a=answer call, q=quit"
+        print "Menu:m=make call, d=send dtmf, h=hangup call, a=answer call, q=quit"
 
         input = sys.stdin.readline().rstrip("\r\n")
         if input == "m":
