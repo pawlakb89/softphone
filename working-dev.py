@@ -1,10 +1,9 @@
 import sys
 import pjsua as pj
+import getpass
 
 LOG_LEVEL=5
 current_call = None
-#PJMEDIA_AUDIO_DEV_HAS_PORTAUDIO = 0
-#PJMEDIA_AUDIO_DEV_HAS_ALSA = 1
 
 def log_cb(level, str, len):
     print str,
@@ -15,15 +14,15 @@ class MyAccountCallback(pj.AccountCallback):
     def __init__(self, account=None):
         pj.AccountCallback.__init__(self, account)
 
-    # Notification on incoming call
+    # Notyfikacje na polaczenie przychodzace
     def on_incoming_call(self, call):
         global current_call 
         if current_call:
             call.answer(486, "Busy")
             return
 
-        print "Incoming call from ", call.info().remote_uri
-        print "Press 'a' to answer"
+        print "Polaczenie przychodzace od: ", call.info().remote_uri
+        print "Nacisnij 'a' aby odebrac."
 
         current_call = call
 
@@ -33,124 +32,121 @@ class MyAccountCallback(pj.AccountCallback):
         current_call.answer(180)
 
 
-# Callback to receive events from Call
+# Odbieranie eventow z polaczenia
 class MyCallCallback(pj.CallCallback):
 
     def __init__(self, call=None):
         pj.CallCallback.__init__(self, call)
 
-    # Notification when call state has changed
+    # Na zmiane stanu polaczenia
     def on_state(self):
         global current_call
-        print "Call with", self.call.info().remote_uri,
-        print "is", self.call.info().state_text,
-        print "last code =", self.call.info().last_code, 
+        print "Polaczenie z ", self.call.info().remote_uri,
+        print "jest ", self.call.info().state_text,
+        print "ostatni kod last_code =", self.call.info().last_code, 
         print "(" + self.call.info().last_reason + ")"
 
         if self.call.info().state == pj.CallState.DISCONNECTED:
             current_call = None
-            print 'Current call is', current_call
+            print 'Biezace polaczenie ', current_call
 
-    # Notification when call's media state has changed.
+    # Na zmiane stanu mediow
     def on_media_state(self):
         if self.call.info().media_state == pj.MediaState.ACTIVE:
-            # Connect the call to sound device
+            # Podlaczenie do urzadzenia audio
             call_slot = self.call.info().conf_slot
             pj.Lib.instance().conf_connect(call_slot, 0)
             pj.Lib.instance().conf_connect(0, call_slot)
-            print "Media is now active"
+            print "Lataja media! :D"
         else:
-            print "Media is inactive"
+            print "Nie lataja media! :( hold maybe"
 
-# Function to make call
+# Metoda to wykonania polaczenia
 def make_call(uri):
     try:
-        print "Making call to", uri
+        print "Wykonuje polaczenie do ", uri
         return acc.make_call(uri, cb=MyCallCallback())
     except pj.Error, e:
         print "Exception: " + str(e)
         return None
 
 
-# Create library instance
+# Tworzenie instancji biblioteki
 lib = pj.Lib()
 
 try:
-    # Init library with default config and some customized
-    # logging config.
     lib.init(log_cfg = pj.LogConfig(level=LOG_LEVEL, callback=log_cb))
 
-    # Create UDP transport which listens to any available port
+    # Utworz transport UDP, ktory slucha na porcie 5060
     transport = lib.create_transport(pj.TransportType.UDP, 
                                      pj.TransportConfig(5060))
-    print "\nListening on", transport.info().host, 
-    print "port", transport.info().port, "\n"
+    print "\nLa la la slucham na: ", transport.info().host, 
+    print ":", transport.info().port, "\n"
 
-    # Start the library
     lib.start()
     
-    print "List sound dev" + str(lib.enum_snd_dev())
-    #lib.set_snd_dev(1,1)
-    snd_dev = lib.get_snd_dev()
-    print str(snd_dev)
-    lib.set_snd_dev(0,0)
-    # when no sound card found
-    #lib.set_null_snd_dev()  # here is the problem i cant capture mic, speaker from local system
-    print "Menu: r=register, d=register default"
-    input = sys.stdin.readline().rstrip("\r\n")
-    if input==r:
-        print "Plz provide domain"
-        domain = sys.stdin.readline().rstrip("\r\n")
-        print " Plz provide user"
-        user_id = sys.stdin.redline().rstrip("\r\n")
-        print "Plz provide password"
-        user_password = sys.stdin.redline().rstrip("\r\n")
-        print  "Plz provide port"
-        user_port = sys.stdin.redline().rstrip("\r\n")
-    elif input ==d:
+    print "Lista urzadzen audio enum_snd_dev()" + str(lib.enum_snd_dev())
+    print "Lista urzadzen audio z get_snd_dev() = ", str(lib.enum_snd_dev())
+
+    lib.set_snd_dev(0,0) #lub -1,-2 do sprawdzenia
+    # kiedy nie ma zadnego audio dev mozna ustawic null, wtedy kompletny brak dzwieku ale nic sie nie wywala
+    #lib.set_null_snd_dev()
+
+    #print "\nMenu: \n[r] - Rejestracja z parametrami uzytkownika, \n[d] - Rejestracja domyslna"
+    #input = sys.stdin.readline().rstrip("\r\n")
+    #if input==r:
+    #    print "\nPodaj domene: "
+    #    domain = sys.stdin.readline().rstrip("\r\n")
+    #    print "\nPodaj id uzytkownika: "
+    #    user_id = sys.stdin.redline().rstrip("\r\n")
         
-        user_id = "1001"
-        user_password = "1234"
-        user_domain = "192.168.43.75"
-        user_port = "5060"
+        #print "\nPodaj haslo uzytkownika"
+        #user_password = sys.stdin.redline().rstrip("\r\n")
+    #    user_password = getpass.getpass("\nPodaj haslo uzytkownika: ")
+        
+    #    print  "Podaj port"
+    #    user_port = sys.stdin.redline().rstrip("\r\n")
+    #if input ==d:
+        
+    #    user_id = "1001"
+    #    user_password = "1234"
+    #    user_domain = "192.168.43.75"
+    #    user_port = "5060"
     
     
-    # Create local account
-    #acc = lib.create_account_for_transport(transport, cb=MyAccountCallback())
-    ###### TUTAJ TRZEBA DOROBIC POBIERANIE TEGO OD USERA I ZAPISYWANIE W PONIZSZYCH ZMIENNYCH, LUB ZAPISYWANIE DO PLIKU I JEZELI NIE ISTNIEJE TO COS #########
-    user_proxy = user_domain + ":" + user_port
+    # Tworzenie konta
+    #user_proxy = user_domain + ":" + user_port
     #acc = lib.create_account(pj.AccountConfig("10.2.0.4", "504", "gdasg649a"))
-    acc = lib.create_account(pj.AccountConfig(domain=user_domain, username=user_id, password=user_password)
-   # user_proxy = user_domain + ":" + user_port
-    #acc = lib.create_account(pj.AccountConfig("192.168.43.75", "1003", "1234"))
+    #acc = lib.create_account(pj.AccountConfig(domain=user_domain, username=user_id, password=user_password)
+    #str = "\""+user_domain+"\",\""+user_id+"\",\""+user_password+"\""
+    #
+#acc = lib.create_account(pj.AccountConfig(str)
+    acc = lib.create_account(pj.AccountConfig("192.168.43.75", "1003", "1234"))
+    
     cb = MyAccountCallback(acc)
     acc.set_callback(cb)
-    #cb.wait()
-    print "\n"
-    print "Registration complete, status=", acc.info().reg_status, \
+    print "\nUkonczono rejestracje, status = ", acc.info().reg_status, \
           "(" + acc.info().reg_reason + ")"    
 
-    # If argument is specified then make call to the URI
     if len(sys.argv) > 1:
         lck = lib.auto_lock()
         current_call = make_call(sys.argv[1])
         print 'Current call is', current_call
         del lck
 
-    my_sip_uri = "sip:" + transport.info().host + \
-                 ":" + str(transport.info().port)
+    my_sip_uri = "sip:1003@" + transport.info().host + ":" + str(transport.info().port)
 
-    # Menu loop
+    # Menu glowne (petelka):
     while True:
-        print "My SIP URI is", my_sip_uri
-        print "Menu:m=make call, d=send dtmf, h=hangup call, a=answer call, q=quit"
+        print "Moje SIP URI to: ", my_sip_uri
+        print "\nMenu glowne: \n [m] - Wykonaj polaczenie\n [d] - Wyslij DTMF(RFC)\n [h] - Rozlacz\n [a] - Odbierz polaczenie\n [q] - Wyjdz"
 
         input = sys.stdin.readline().rstrip("\r\n")
         if input == "m":
             if current_call:
-                print "Already have another call"
+                print "Masz juz jedno polaczenie!"
                 continue
-            print "Enter destination URI to call: ", 
+            print "\n Podaj numer docelowy: ", 
 # Aby nie trzeba bylo podawac dest URI w formacie sip:user_id@user_domain:port
 #    old -> input = sys.stdin.readline().rstrip("\r\n")
             input = sys.stdin.readline().rstrip("\r\n")
@@ -158,34 +154,33 @@ try:
             if input == "":
                 continue
             lck = lib.auto_lock()
-            #current_call = make_call(input)
             current_call = make_call(created_uri)
             del lck
-## Dodane dtmf
+## DTMF
         elif input == "d":
             if not current_call:
-                print "There is no call that dtmf can be sent"
+                print "Nie masz aktywnego polaczenia aby wyslac DTMF!"
                 continue
-            print "Please provide dtmf to send: \n"
+            print "Podaj sekwencje DTMF do wyslania: \n"
             dtmf = sys.stdin.readline().rstrip("\r\n")
             current_call.dial_dtmf(dtmf)
-### ^ DTMF
+## Hangup
         elif input == "h":
             if not current_call:
-                print "There is no call"
+                print "Nie masz aktywnego polaczenia, ktore mozna rozlaczyc!"
                 continue
             current_call.hangup()
 
         elif input == "a":
             if not current_call:
-                print "There is no call"
+                print "Nie ma polaczenia, ktore mozesz odebrac!"
                 continue
             current_call.answer(200)
 
         elif input == "q":
             break
 
-    # Shutdown the library
+    # Rozpierdol Liba()
     transport = None
     acc.delete()
     acc = None
